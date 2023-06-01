@@ -1,0 +1,408 @@
+<html><head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="description" content="Easily convert your written text into natural sounding voice in up to 50 different languages and/or accents. Download as MP3 or listen to it.">
+	<title>Free Text-To-Speech for 28+ languages and MP3 Download | ttsMP3.com</title>
+
+
+	<script src="https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202305250101/reactive_library_fy2021.js?bust=31074966"></script><script src="https://partner.googleadservices.com/gampad/cookie.js?domain=ttsmp3.com&amp;callback=_gfp_s_&amp;client=ca-pub-2908655618540976&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1683406866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1683480298%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA"></script><script src="https://pagead2.googlesyndication.com/pagead/managed/js/adsense/m202305250101/show_ads_impl_fy2021.js?bust=31074966" id="google_shimpl"></script><script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript">
+		function support_mp3() {
+			var a = document.createElement('audio');
+			return !!(a.canPlayType && a.canPlayType('audio/mpeg;').replace(/no/, ''));	
+		}
+		var soundarray = 0;
+		
+		function checkfors3(s3file, silent) {
+			var s3checkreq = new XMLHttpRequest();
+			s3checkreq.open("POST", 'https://ttsmp3.com/inc/checks3.php?id=' + s3file, true);
+			s3checkreq.send( null );
+			s3checkreq.onreadystatechange = function (e) {
+				if (this.readyState == 4 && this.status == 200) {
+					s3checker = this.responseText;
+					if (s3checker == 0) {
+						setTimeout(function(){
+							checkfors3(s3file, silent);
+						}, 2000);
+						
+					}
+					else {
+						var s3filepath = "https://s3.ca-central-1.amazonaws.com/ttsmp3files/" + s3file + ".mp3";
+						
+						var myaudio = new Audio(s3filepath);
+						document.getElementById("s3loader").style.display = "none"; 
+						myaudio.addEventListener("playing", function() 
+						 {
+							document.getElementById("vorlesenbutton").disabled = false; 
+							document.getElementById("vorlesenbutton").value = "Reading...";
+						 });
+						myaudio.addEventListener("ended", function() 
+						 {
+							document.getElementById("vorlesenbutton").disabled = false; 
+							document.getElementById("vorlesenbutton").value = "Read";
+						 });
+						myaudio.addEventListener('error', function failed(e) {
+							switch (e.target.error.code) {
+							 case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+							   alert('Your audio file was created but is corrupt. Please check your message for invalid characters.');
+							   enablebuttons();
+							   break;
+						   }
+						 }, true);
+						if (silent == 0) {
+							myaudio.play();
+						}
+						else {
+							godownload(s3file, "s3");
+							enablebuttons();
+						}
+					}
+				}
+			}			
+
+		}
+
+		
+
+		function escapeRegExp(str) {
+			return str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+		}
+		function replaceAll(str, find, replace) {
+			return str.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+		}
+		function enablebuttons() {
+			document.getElementById("vorlesenbutton").disabled = false;
+			document.getElementById("vorlesenbutton").value = "Read";
+		}
+		function playsound(silent) {
+			if (!support_mp3()) {
+				alert("Sorry, your current browser does not support playing MP3 files, please switch to a different browser, i.e. Chrome, Firefox. Thank you");
+			}
+			else {
+				document.getElementById("vorlesenbutton").disabled = true; 
+				document.getElementById("vorlesenbutton").value = "Creating...";
+				var voicetext = document.getElementById('voicetext').value;
+				if (voicetext == "") { alert("Please input text."); document.getElementById("vorlesenbutton").disabled = false; }
+				var e = document.getElementById("sprachwahl");
+				var lang = e.options[e.selectedIndex].value;
+				var httpreq = new XMLHttpRequest();
+				voicetext = encodeURIComponent(replaceAll(voicetext, "&"," and "));
+				var params = "msg="+voicetext+"&lang="+lang+"&source=ttsmp3";
+				httpreq.open("POST", 'https://ttsmp3.com/makemp3_new.php', true);
+				httpreq.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+				httpreq.overrideMimeType("application/json");
+				httpreq.onreadystatechange = function (e) {
+					if (this.readyState == 4 && this.status == 200) {
+						try {
+							soundarray = JSON.parse(this.responseText);
+							if (soundarray["Error"] == 0) {
+								if (soundarray["tasktype"] != "s3") {
+									console.log("direct processing");
+									var myaudio = new Audio(soundarray["URL"]);
+									myaudio.addEventListener("playing", function() 
+									 {
+										document.getElementById("vorlesenbutton").disabled = false; 
+										document.getElementById("vorlesenbutton").value = "Reading...";
+									 });
+									myaudio.addEventListener("ended", function() 
+									 {
+										document.getElementById("vorlesenbutton").disabled = false; 
+										document.getElementById("vorlesenbutton").value = "Read";
+									 });
+									myaudio.addEventListener('error', function failed(e) {
+										switch (e.target.error.code) {
+										 case e.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+										   alert('Your audio file was created but is corrupt. Please check your message for invalid characters.');
+										   enablebuttons();
+										   break;
+									   }
+									 }, true);
+									if (silent == 0) {
+										myaudio.play();
+									}
+									else {
+										godownload(soundarray["MP3"], "direct");
+										enablebuttons();
+									}
+								}
+								else {
+									console.log("task processing");
+									document.getElementById("s3loader").style.display = "block"; 
+									checkfors3(soundarray["s3task"], silent);
+									
+								}
+							}
+							else {
+								alert(soundarray['Error']);
+								if (soundarray['Error'] == "Usage Limit exceeded") {
+									var d = Math.random();
+										if (d < 1) {
+											window.location = "https://ttsmp3.com/register?click=jsredirect";
+										//	window.open("https://ttsmp3.com/register?click=jsredirect", "_blank");
+										}
+										else {
+											$("#sprachwahl").fadeOut("slow");
+											$("#vorlesenbutton").fadeOut("slow");
+											$("#downloadenbutton").fadeOut("slow");
+											$("#limitannounce").fadeIn("slow");
+										}
+										
+								}
+								enablebuttons();
+							}
+						}
+						catch (err) {
+							alert("Something went wrong... please contact support@ttsmp3.com for support");
+							enablebuttons();
+						}
+					}
+				}
+				httpreq.send(params);				
+			}
+		}
+		function godownload(playthis, location) {
+			if (!support_mp3()) {
+				alert("Sorry, your current browser does not support playing MP3 files, please switch to a different browser, i.e. Chrome, Firefox. Thank you :-)");
+			}
+			else {
+				// alert(playthis);
+				playthis = playthis || "";
+				var voicetext = document.getElementById('voicetext').value;
+				if (voicetext == "") { alert("Please input text."); die; }
+				var e = document.getElementById("sprachwahl");
+				var lang = e.options[e.selectedIndex].value;
+				if (((soundarray != 0) && (soundarray["Text"] == voicetext)) || (playthis != "")) {
+
+					if (playthis != "") { soundarray["MP3"] = playthis; }
+					if (typeof location === "undefined") { location = soundarray["tasktype"]; }
+					var httpreq = new XMLHttpRequest();
+					httpreq.open("GET", 'https://ttsmp3.com/dlmp3.php?mp3='+soundarray["MP3"] + "&location=" + location, true);
+					httpreq.responseType = "blob";
+					httpreq.onreadystatechange = function (e) {
+						if (this.readyState == 4 && this.status == 200) {
+							try {
+								var blob = new Blob([this.response], {type:'audio/mp3'});
+								var today = new Date();
+								var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+								var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+								saveAs(blob, "ttsMP3.com_VoiceText_"+date+"_"+time+".mp3");
+							}
+							catch (err) {
+								alert("Something went wrong... please contact support@ttsmp3.com for support");
+							}
+						}
+					}
+					httpreq.send();
+				}
+				else {
+					playsound(1);
+				}
+			}
+		}
+				
+		function dontsubmit() {
+			return false;
+		}
+
+	</script>
+
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.1/cookieconsent.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.1.1/cookieconsent.min.js" data-cfasync="false"></script>
+<script>
+window.addEventListener('load', function(){
+  window.cookieconsent.initialise({
+   revokeBtn: "<div class='cc-revoke'></div>",
+   type: "opt-in",
+   position: "top",
+   static: true,
+   theme: "classic",
+   palette: {
+       popup: {
+           background: "#000",
+           text: "#fff"
+        },
+       button: {
+           background: "#fd0",
+           text: "#000"
+        }
+    },
+   content: {
+       link: "Сookie policy",
+       href: "https://ttsmp3.com/privacypolicy"
+    },
+    onInitialise: function(status) {
+      if(status == cookieconsent.status.allow) myScripts();
+    },
+    onStatusChange: function(status) {
+      if (this.hasConsented()) myScripts();
+    }
+  })
+});
+
+function myScripts() {
+
+
+
+
+	!function(f,b,e,v,n,t,s)
+	{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+	n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+	if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+	n.queue=[];t=b.createElement(e);t.async=!0;
+	t.src=v;s=b.getElementsByTagName(e)[0];
+	s.parentNode.insertBefore(t,s)}(window, document,'script',
+	'https://connect.facebook.net/en_US/fbevents.js');
+	fbq('init', '2655033931276642');
+	fbq('track', 'PageView');
+
+
+
+}
+
+</script>	
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-28351091-23"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  
+
+	gtag('js', new Date());
+
+	gtag('config', 'UA-28351091-23');
+
+ 
+</script>
+
+
+<script async="" src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+
+
+<meta http-equiv="origin-trial" content="A7CQXglZzTrThjGTBEn1rWTxHOEtkWivwzgea+NjyardrwlieSjVuyG44PkYgIPGs8Q9svD8sF3Yedn0BBBjXAkAAACFeyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjk1MTY3OTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A3vKT9yxRPjmXN3DpIiz58f5JykcWHjUo/W7hvmtjgh9jPpQgem9VbADiNovG8NkO6mRmk70Kex8/KUqAYWVWAEAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjk1MTY3OTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="A4A26Ymj79UVY7C7JGUS4BG1s7MdcDokAQf/RP0paks+RoTYbXHxceT/5L4iKcsleFCngi75YfNRGW2+SpVv1ggAAACLeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXRhZ3NlcnZpY2VzLmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjk1MTY3OTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ=="><meta http-equiv="origin-trial" content="As0hBNJ8h++fNYlkq8cTye2qDLyom8NddByiVytXGGD0YVE+2CEuTCpqXMDxdhOMILKoaiaYifwEvCRlJ/9GcQ8AAAB8eyJvcmlnaW4iOiJodHRwczovL2RvdWJsZWNsaWNrLm5ldDo0NDMiLCJmZWF0dXJlIjoiV2ViVmlld1hSZXF1ZXN0ZWRXaXRoRGVwcmVjYXRpb24iLCJleHBpcnkiOjE3MTk1MzI3OTksImlzU3ViZG9tYWluIjp0cnVlfQ=="><meta http-equiv="origin-trial" content="AgRYsXo24ypxC89CJanC+JgEmraCCBebKl8ZmG7Tj5oJNx0cmH0NtNRZs3NB5ubhpbX/bIt7l2zJOSyO64NGmwMAAACCeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZXN5bmRpY2F0aW9uLmNvbTo0NDMiLCJmZWF0dXJlIjoiV2ViVmlld1hSZXF1ZXN0ZWRXaXRoRGVwcmVjYXRpb24iLCJleHBpcnkiOjE3MTk1MzI3OTksImlzU3ViZG9tYWluIjp0cnVlfQ=="><link rel="preload" href="https://adservice.google.com/adsid/integrator.js?domain=ttsmp3.com" as="script"><script type="text/javascript" src="https://adservice.google.com/adsid/integrator.js?domain=ttsmp3.com"></script><link rel="preload" href="https://adservice.google.com/adsid/integrator.js?domain=ttsmp3.com" as="script"><script type="text/javascript" src="https://adservice.google.com/adsid/integrator.js?domain=ttsmp3.com"></script><link rel="preload" href="https://adservice.google.com/adsid/integrator.js?domain=ttsmp3.com" as="script"><script type="text/javascript" src="https://adservice.google.com/adsid/integrator.js?domain=ttsmp3.com"></script><style></style></head>
+<body aria-hidden="false"><div class="cc-revoke" style="display: none;"></div><div class="cc-grower" style="max-height: 72px;"><div role="dialog" aria-live="polite" aria-label="cookieconsent" aria-describedby="cookieconsent:desc" class="cc-window cc-banner cc-type-opt-in cc-theme-classic cc-static cc-top cc-color-override--1518487596 " style=""><!--googleoff: all--><span id="cookieconsent:desc" class="cc-message">This website uses cookies to ensure you get the best experience on our website. <a aria-label="learn more about cookies" role="button" tabindex="0" class="cc-link" href="https://ttsmp3.com/privacypolicy" rel="noopener noreferrer nofollow" target="_blank">Сookie policy</a></span><div class="cc-compliance cc-highlight"><a aria-label="deny cookies" role="button" tabindex="0" class="cc-btn cc-deny">Decline</a><a aria-label="allow cookies" role="button" tabindex="0" class="cc-btn cc-allow">Allow cookies</a></div><!--googleon: all--></div></div>
+	<div id="header">
+		
+			<a href="/"><img alt="ttsmp3.com LOGO" src="/images/logo.png" width="300"></a>
+		
+
+	</div>
+	<div id="body" style="height: auto !important; min-height: 0px !important;">
+	<h1>Free Text-To-Speech and Text-to-MP3 for US English</h1>
+	<p>
+
+		<!-- TTSMP3 Rect -->
+		<ins class="adsbygoogle" style="display: inline-block; width: 1903px; height: 400px;" data-ad-client="ca-pub-2908655618540976" data-ad-slot="1961901246" data-adsbygoogle-status="done" data-ad-status="filled"><div id="aswift_0_host" style="border: medium none; height: 400px; width: 1903px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_0" name="aswift_0" style="left:0;position:absolute;top:0;border:0;width:1903px;height:400px;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-2908655618540976&amp;output=html&amp;h=400&amp;slotname=1961901246&amp;adk=2898404659&amp;adf=3975652295&amp;pi=t.ma~as.1961901246&amp;w=1903&amp;lmt=1685645868&amp;rafmt=12&amp;format=1903x400&amp;url=https%3A%2F%2Fttsmp3.com%2F&amp;wgl=1&amp;dt=1685645868159&amp;bpp=2&amp;bdt=996&amp;idt=282&amp;shv=r20230530&amp;mjsv=m202305250101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA&amp;correlator=6443000861599&amp;frm=20&amp;pv=2&amp;ga_vid=1038892520.1683406865&amp;ga_sid=1685645869&amp;ga_hid=247810630&amp;ga_fc=1&amp;u_tz=-300&amp;u_his=3&amp;u_h=1080&amp;u_w=1920&amp;u_ah=1040&amp;u_aw=1920&amp;u_cd=24&amp;u_sd=1&amp;adx=0&amp;ady=208&amp;biw=1903&amp;bih=602&amp;scr_x=0&amp;scr_y=0&amp;eid=44759927%2C44759837%2C44759876%2C31074583%2C31074966%2C31074990%2C44788442%2C44793497&amp;oid=2&amp;pvsid=3193197553643833&amp;tmod=1085059103&amp;nvt=1&amp;fc=896&amp;brdim=-8%2C-8%2C-8%2C-8%2C1920%2C0%2C1936%2C1056%2C1920%2C602&amp;vis=1&amp;rsz=%7C%7CeE%7C&amp;abl=CS&amp;pfx=0&amp;fu=256&amp;bc=31&amp;ifi=1&amp;uci=a!1&amp;fsb=1&amp;xpc=L1x0Trmqwu&amp;p=https%3A//ttsmp3.com&amp;dtd=592" data-google-container-id="a!1" data-google-query-id="CNHA8pjgov8CFdsFKgodDdAPwA" data-load-complete="true" width="1903" height="400" frameborder="0"></iframe></div></ins>
+		<script>
+		(adsbygoogle = window.adsbygoogle || []).push({});
+		</script>
+	</p>
+	
+	
+	<div style="text-align:left;" id="introtext">
+
+	
+	<p>Easily convert your <strong>US English</strong> text into professional speech for free. Perfect for e-learning, presentations, YouTube videos and increasing the accessibility of your website. Our voices pronounce your texts in their own language using a specific accent. Plus, these texts can be downloaded as MP3. In some languages, multiple speakers are available.
+			</p>
+
+	
+
+	</div>
+		<div id="featured">
+			
+			<form onsubmit="return dontsubmit();">
+			<textarea onchange="enablebuttons();" maxlength="3000" id="voicetext" placeholder="your text here"></textarea>
+			<select id="sprachwahl">
+			<option value="Zeina">Arabic / Zeina</option><option value="Russell">Australian English / Russell</option><option value="Nicole">Australian English / Nicole</option><option value="Vitoria">Brazilian Portuguese / Vitória</option><option value="Camila">Brazilian Portuguese / Camila</option><option value="Ricardo">Brazilian Portuguese / Ricardo</option><option value="Emma">British English / Emma</option><option value="Brian">British English / Brian</option><option value="Amy">British English / Amy</option><option value="Chantal">Canadian French / Chantal</option><option value="Conchita">Castilian Spanish / Conchita</option><option value="Lucia">Castilian Spanish / Lucia</option><option value="Enrique">Castilian Spanish / Enrique</option><option value="Zhiyu">Chinese Mandarin / Zhiyu</option><option value="Naja">Danish / Naja</option><option value="Mads">Danish / Mads</option><option value="Ruben">Dutch / Ruben</option><option value="Lotte">Dutch / Lotte</option><option value="Celine">French / Céline</option><option value="Lea">French / Léa</option><option value="Mathieu">French / Mathieu</option><option value="Hans">German / Hans</option><option value="Vicki">German / Vicki</option><option value="Marlene">German / Marlene</option><option value="Dora">Icelandic / Dóra</option><option value="Karl">Icelandic / Karl</option><option value="Aditi">Indian English / Aditi</option><option value="Raveena">Indian English / Raveena</option><option value="Bianca">Italian / Bianca</option><option value="Carla">Italian / Carla</option><option value="Giorgio">Italian / Giorgio</option><option value="Takumi">Japanese / Takumi</option><option value="Mizuki">Japanese / Mizuki</option><option value="Seoyeon">Korean / Seoyeon</option><option value="Mia">Mexican Spanish / Mia</option><option value="Liv">Norwegian / Liv</option><option value="Jacek">Polish / Jacek</option><option value="Jan">Polish / Jan</option><option value="Maja">Polish / Maja</option><option value="Ewa">Polish / Ewa</option><option value="Cristiano">Portuguese / Cristiano</option><option value="Ines">Portuguese / Inês</option><option value="Carmen">Romanian / Carmen</option><option value="Maxim">Russian / Maxim</option><option value="Tatyana">Russian / Tatyana</option><option value="Astrid">Swedish / Astrid</option><option value="Filiz">Turkish / Filiz</option><option value="Salli" selected="">US English / Salli</option><option value="Ivy">US English / Ivy</option><option value="Joey">US English / Joey</option><option value="Matthew">US English / Matthew</option><option value="Kimberly">US English / Kimberly</option><option value="Kendra">US English / Kendra</option><option value="Justin">US English / Justin</option><option value="Joanna">US English / Joanna</option><option value="Lupe">US Spanish / Lupe</option><option value="Penelope">US Spanish / Penélope</option><option value="Miguel">US Spanish / Miguel</option><option value="Gwyneth">Welsh / Gwyneth</option><option value="Geraint">Welsh English / Geraint</option>			</select>
+			<input onclick="playsound(0);" id="vorlesenbutton" class="subbuttons" type="submit" value="Read">
+			<input onclick="godownload();" id="downloadenbutton" class="subbuttons" type="submit" value="Download as MP3">
+			<div style="clear:both;"></div>
+			<p id="limitannounce"><!--<a target="_blank" href="https://ttsmp3.com/register?click=banner"><img style='width: 100% !important;' src='/images/BannerAdNew.jpg'/></a>--></p>
+			</form>
+			
+		</div>
+		
+		<div style="border: 2px solid #ccc; width: 350px; padding: 10px; display: none;" id="s3loader">
+		<p style="font-weight: bold;">Woah, that is quite some text... </p><p>Please give us a moment to process your request...</p><img style="border: none;" data-src="images/loader.gif" width="200">
+		</div>
+		<p>Input limit: 3,000 characters / Don't forget to turn on your speakers :-)</p><div style="width: 100%; height: auto; clear: both; text-align: center;" class="google-auto-placed ap_container"><ins style="display: block; margin: auto; background-color: transparent; height: 280px;" data-ad-format="auto" class="adsbygoogle adsbygoogle-noablate" data-ad-client="ca-pub-2908655618540976" data-adsbygoogle-status="done" data-ad-status="filled"><div id="aswift_3_host" style="border: medium none; height: 280px; width: 1200px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block; overflow: visible;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_3" name="aswift_3" style="left:0;position:absolute;top:0;border:0;width:1200px;height:280px;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-2908655618540976&amp;output=html&amp;h=280&amp;adk=1100774350&amp;adf=1242411546&amp;pi=t.aa~a.3170867606~i.11~rp.4&amp;w=1200&amp;fwrn=4&amp;fwrnh=100&amp;lmt=1685645869&amp;num_ads=1&amp;rafmt=1&amp;armr=3&amp;sem=mc&amp;pwprc=2411275385&amp;ad_type=text_image&amp;format=1200x280&amp;url=https%3A%2F%2Fttsmp3.com%2F&amp;fwr=0&amp;pra=3&amp;rh=200&amp;rw=1903&amp;rpe=1&amp;resp_fmts=3&amp;wgl=1&amp;fa=27&amp;dt=1685645869299&amp;bpp=1&amp;bdt=2136&amp;idt=-M&amp;shv=r20230530&amp;mjsv=m202305250101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA&amp;prev_fmts=1903x400%2C1903x280%2C0x0&amp;nras=2&amp;correlator=6443000861599&amp;frm=20&amp;pv=1&amp;ga_vid=1038892520.1683406865&amp;ga_sid=1685645869&amp;ga_hid=247810630&amp;ga_fc=1&amp;u_tz=-300&amp;u_his=3&amp;u_h=1080&amp;u_w=1920&amp;u_ah=1040&amp;u_aw=1920&amp;u_cd=24&amp;u_sd=1&amp;adx=352&amp;ady=1025&amp;biw=1903&amp;bih=602&amp;scr_x=0&amp;scr_y=306&amp;eid=44759927%2C44759837%2C44759876%2C31074583%2C31074966%2C31074990%2C44788442%2C44793497&amp;oid=2&amp;pvsid=3193197553643833&amp;tmod=1085059103&amp;nvt=1&amp;fc=384&amp;brdim=-8%2C-8%2C-8%2C-8%2C1920%2C0%2C1936%2C1056%2C1920%2C602&amp;vis=1&amp;rsz=%7C%7Cs%7C&amp;abl=NS&amp;fu=128&amp;bc=31&amp;ifi=4&amp;uci=a!4&amp;btvi=2&amp;fsb=1&amp;xpc=uytzIl8zOk&amp;p=https%3A//ttsmp3.com&amp;dtd=58" data-google-container-id="a!4" data-google-query-id="CJqNk5ngov8CFRs8AQodRUcOVw" data-load-complete="true" width="1200" height="280" frameborder="0"></iframe></div></ins></div><p> Hint: If you finish a sentence, leave a space after the dot before the next one starts for better pronunciation.</p>
+		<p>
+
+			<!-- TTSMP3 Rect -->
+			<ins class="adsbygoogle" style="display: inline-block; width: 1903px; height: 280px;" data-ad-client="ca-pub-2908655618540976" data-ad-slot="1961901246" data-adsbygoogle-status="done" data-ad-status="filled"><div id="aswift_1_host" style="border: medium none; height: 280px; width: 1903px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_1" name="aswift_1" style="left:0;position:absolute;top:0;border:0;width:1903px;height:280px;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-2908655618540976&amp;output=html&amp;h=280&amp;slotname=1961901246&amp;adk=2949984285&amp;adf=2837560965&amp;pi=t.ma~as.1961901246&amp;w=1903&amp;lmt=1685645868&amp;rafmt=12&amp;format=1903x280&amp;url=https%3A%2F%2Fttsmp3.com%2F&amp;wgl=1&amp;dt=1685645868159&amp;bpp=1&amp;bdt=996&amp;idt=298&amp;shv=r20230530&amp;mjsv=m202305250101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA&amp;prev_fmts=1903x400&amp;correlator=6443000861599&amp;frm=20&amp;pv=1&amp;ga_vid=1038892520.1683406865&amp;ga_sid=1685645869&amp;ga_hid=247810630&amp;ga_fc=1&amp;u_tz=-300&amp;u_his=3&amp;u_h=1080&amp;u_w=1920&amp;u_ah=1040&amp;u_aw=1920&amp;u_cd=24&amp;u_sd=1&amp;adx=0&amp;ady=1069&amp;biw=1903&amp;bih=602&amp;scr_x=0&amp;scr_y=0&amp;eid=44759927%2C44759837%2C44759876%2C31074583%2C31074966%2C31074990%2C44788442%2C44793497&amp;oid=2&amp;pvsid=3193197553643833&amp;tmod=1085059103&amp;nvt=1&amp;fc=896&amp;brdim=-8%2C-8%2C-8%2C-8%2C1920%2C0%2C1936%2C1056%2C1920%2C602&amp;vis=1&amp;rsz=%7C%7CeEbr%7C&amp;abl=CS&amp;pfx=0&amp;fu=256&amp;bc=31&amp;ifi=2&amp;uci=a!2&amp;btvi=1&amp;fsb=1&amp;xpc=g6fKgVwJ3L&amp;p=https%3A//ttsmp3.com&amp;dtd=597" data-google-container-id="a!2" data-google-query-id="COz18pjgov8CFdQEKgodt7EJAg" data-load-complete="true" width="1903" height="280" frameborder="0"></iframe></div></ins>
+		<script>
+		(adsbygoogle = window.adsbygoogle || []).push({});
+		</script>
+		</p>
+		
+				<br>
+		<div style="text-align: justify; width: 70%; padding: 30px; border: 2px solid #cecece; padding-top: 10px; margin-top: 5px;">
+<h3>Here are some features to use while generating speech:</h3>
+
+<h5>Add a break</h5>
+Mary had a little lamb &lt;break time="1s"/&gt; Whose fleece was white as snow.
+
+<h5>Emphasizing words</h5>
+I already told you I &lt;emphasis level="strong"&gt;really like &lt;/emphasis&gt; that person.
+
+<h5>Speed</h5>
+For dramatic purposes, you might wish to &lt;prosody rate="slow"&gt;slow down the speaking rate of your text.&lt;/prosody&gt;     <br>
+Or if you are in a hurry &lt;prosody rate="fast"&gt;your may want to speed it up a bit.&lt;/prosody&gt;    
+
+<h5>Pitch</h5>
+Do you like sythesized speech &lt;prosody pitch="high"&gt;with a pitch that is higher than normal?&lt;/prosody&gt;    <br>
+Or do you prefer your speech &lt;prosody pitch="-20%"&gt;with a somewhat lower pitch?&lt;/prosody&gt;
+
+<h5>Whisper</h5>
+&lt;amazon:effect name="whispered"&gt;If you make any noise, &lt;/amazon:effect&gt; she said, &lt;amazon:effect name="whispered"&gt;they will hear us.&lt;/amazon:effect&gt;
+
+<h5>Conversations</h5>
+It is possible to switch between speakers within the text. Just use the following format:<br>
+[speaker:Brian] Hello Emma<br>
+[speaker:Emma] Hey Brian<br>
+[speaker:Brian] How are you doing?<br>
+[speaker:Emma] I am fine. May i invite you to a cup of tea?<br>
+<p>Please note: Remove any diacritical signs from the speakers names when using this, Léa = Lea, Penélope = Penelope</p>
+<br><br>
+<p></p><h5>Need more effects or customization? Please refer to the <a target="_blank" href="https://docs.aws.amazon.com/polly/latest/dg/supportedtags.html">Amazon SSML Tags for Amazon Polly</a></h5><p></p>
+</div><div style="width: 100%; height: auto; clear: both; text-align: center;" class="google-auto-placed"><ins style="display: block; margin: 15px auto 10px; background-color: transparent; height: 90px;" data-ad-format="auto" class="adsbygoogle adsbygoogle-noablate" data-ad-client="ca-pub-2908655618540976" data-adsbygoogle-status="done" data-ad-status="filled"><div id="aswift_4_host" style="border: medium none; height: 90px; width: 1200px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block; overflow: visible;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_4" name="aswift_4" style="left:0;position:absolute;top:0;border:0;width:1200px;height:90px;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-2908655618540976&amp;output=html&amp;h=90&amp;adk=2665634963&amp;adf=3745989836&amp;pi=t.aa~a.3768824341~rp.4&amp;w=1200&amp;fwrn=4&amp;fwrnh=100&amp;lmt=1685645869&amp;rafmt=1&amp;to=qs&amp;pwprc=2411275385&amp;format=1200x90&amp;url=https%3A%2F%2Fttsmp3.com%2F&amp;fwr=0&amp;pra=3&amp;rpe=1&amp;resp_fmts=3&amp;wgl=1&amp;fa=40&amp;dt=1685645869299&amp;bpp=1&amp;bdt=2136&amp;idt=-M&amp;shv=r20230530&amp;mjsv=m202305250101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA&amp;prev_fmts=1903x400%2C1903x280%2C0x0%2C1200x280&amp;nras=3&amp;correlator=6443000861599&amp;frm=20&amp;pv=1&amp;ga_vid=1038892520.1683406865&amp;ga_sid=1685645869&amp;ga_hid=247810630&amp;ga_fc=1&amp;u_tz=-300&amp;u_his=3&amp;u_h=1080&amp;u_w=1920&amp;u_ah=1040&amp;u_aw=1920&amp;u_cd=24&amp;u_sd=1&amp;adx=352&amp;ady=2334&amp;biw=1903&amp;bih=602&amp;scr_x=0&amp;scr_y=306&amp;eid=44759927%2C44759837%2C44759876%2C31074583%2C31074966%2C31074990%2C44788442%2C44793497&amp;oid=2&amp;pvsid=3193197553643833&amp;tmod=1085059103&amp;nvt=1&amp;fc=896&amp;brdim=-8%2C-8%2C-8%2C-8%2C1920%2C0%2C1936%2C1056%2C1920%2C602&amp;vis=1&amp;rsz=%7C%7Cs%7C&amp;abl=NS&amp;fu=128&amp;bc=31&amp;ifi=5&amp;uci=a!5&amp;btvi=3&amp;fsb=1&amp;xpc=OGcNolFZtu&amp;p=https%3A//ttsmp3.com&amp;dtd=64" data-google-container-id="a!5" data-google-query-id="CP6FmJngov8CFY0RKgod_NkK5g" data-load-complete="true" width="1200" height="90" frameborder="0"></iframe></div></ins></div><div style="width: 100%; height: auto; clear: both; text-align: center;" class="google-auto-placed"><ins style="display: block; margin: 15px auto 10px; background-color: transparent; height: 60px;" data-ad-format="auto" class="adsbygoogle adsbygoogle-noablate" data-ad-client="ca-pub-2908655618540976" data-adsbygoogle-status="done" data-ad-status="filled"><div id="aswift_5_host" style="border: medium none; height: 60px; width: 1200px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block; overflow: visible;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_5" name="aswift_5" style="left:0;position:absolute;top:0;border:0;width:1200px;height:60px;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-2908655618540976&amp;output=html&amp;h=60&amp;adk=2253674257&amp;adf=3052052983&amp;pi=t.aa~a.3768807342~rp.4&amp;w=1200&amp;fwrn=4&amp;fwrnh=100&amp;lmt=1685645869&amp;rafmt=1&amp;to=qs&amp;pwprc=2411275385&amp;format=1200x60&amp;url=https%3A%2F%2Fttsmp3.com%2F&amp;fwr=0&amp;pra=3&amp;rpe=1&amp;resp_fmts=3&amp;wgl=1&amp;fa=40&amp;dt=1685645869299&amp;bpp=1&amp;bdt=2136&amp;idt=0&amp;shv=r20230530&amp;mjsv=m202305250101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA&amp;prev_fmts=1903x400%2C1903x280%2C0x0%2C1200x280%2C1200x90&amp;nras=4&amp;correlator=6443000861599&amp;frm=20&amp;pv=1&amp;ga_vid=1038892520.1683406865&amp;ga_sid=1685645869&amp;ga_hid=247810630&amp;ga_fc=1&amp;u_tz=-300&amp;u_his=3&amp;u_h=1080&amp;u_w=1920&amp;u_ah=1040&amp;u_aw=1920&amp;u_cd=24&amp;u_sd=1&amp;adx=352&amp;ady=2439&amp;biw=1903&amp;bih=602&amp;scr_x=0&amp;scr_y=306&amp;eid=44759927%2C44759837%2C44759876%2C31074583%2C31074966%2C31074990%2C44788442%2C44793497&amp;oid=2&amp;pvsid=3193197553643833&amp;tmod=1085059103&amp;nvt=1&amp;fc=896&amp;brdim=-8%2C-8%2C-8%2C-8%2C1920%2C0%2C1936%2C1056%2C1920%2C602&amp;vis=1&amp;rsz=%7C%7Cs%7C&amp;abl=NS&amp;fu=128&amp;bc=31&amp;ifi=6&amp;uci=a!6&amp;btvi=4&amp;fsb=1&amp;xpc=rioIrBhoOK&amp;p=https%3A//ttsmp3.com&amp;dtd=69" data-google-container-id="a!6" data-google-query-id="CK7smJngov8CFXZqiwodUtcHAg" data-load-complete="true" width="1200" height="60" frameborder="0"></iframe></div></ins></div>		<br>
+		
+		<div style="text-align: justify; width: 70%; padding: 30px; border: 2px solid #cecece; padding-top: 10px; margin-top: 5px;"><h3>Facts about the US English language:</h3><p></p><p>English was brought to Britain in the mid 5th to 7th centuries. If you were to ask those who don't speak English whether or not it's a hard language to learn, you'd likely get more than a few who insist that it is among the hardest.</p>
+
+<p>Though, it can be argued that English is easy since it has no gender, no word agreement, and no cases. Yet, it does have words such as through, threw, and thru, all sounds the same, but are spelled differently, and can't be used interchangeably.</p>
+
+<p>English also has polish, and Polish. One is used to make furniture shine, while the other is a language. Or take resume and resume, one is used when you're filling out job applications, and the other is used when you want to tell someone to carry on with what they're doing.</p>
+
+<p>As you can see above, the English language can be challenging, however, it's far from the most difficult language to learn. With a bit of study, and some practice, almost anyone can learn English. One of the best ways to learn the language is to find a friend who speaks English, and is willing to have conversations with you. This will help you immerse yourself in the language and pick up on the nuances, and speech patterns of English. With a bit of practice, you'll soon be speaking English like it's your native language. </p><p></p></div>
+						<div style="text-align: justify; width: 70%; padding: 30px; border: 2px solid #cecece; padding-top: 10px; margin-top: 15px;">
+		<h3>Supported voice languages: </h3>
+		
+		<a href="/text-to-speech/Arabic/"><div class="langbox">Arabic</div></a><a href="/text-to-speech/Australian English/"><div class="langbox">Australian English</div></a><a href="/text-to-speech/Brazilian Portuguese/"><div class="langbox">Brazilian Portuguese</div></a><a href="/text-to-speech/British English/"><div class="langbox">British English</div></a><a href="/text-to-speech/Canadian French/"><div class="langbox">Canadian French</div></a><a href="/text-to-speech/Castilian Spanish/"><div class="langbox">Castilian Spanish</div></a><a href="/text-to-speech/Chinese Mandarin/"><div class="langbox">Chinese Mandarin</div></a><a href="/text-to-speech/Danish/"><div class="langbox">Danish</div></a><a href="/text-to-speech/Dutch/"><div class="langbox">Dutch</div></a><a href="/text-to-speech/French/"><div class="langbox">French</div></a><a href="/text-to-speech/German/"><div class="langbox">German</div></a><a href="/text-to-speech/Icelandic/"><div class="langbox">Icelandic</div></a><a href="/text-to-speech/Indian English/"><div class="langbox">Indian English</div></a><a href="/text-to-speech/Italian/"><div class="langbox">Italian</div></a><a href="/text-to-speech/Japanese/"><div class="langbox">Japanese</div></a><a href="/text-to-speech/Korean/"><div class="langbox">Korean</div></a><a href="/text-to-speech/Mexican Spanish/"><div class="langbox">Mexican Spanish</div></a><a href="/text-to-speech/Norwegian/"><div class="langbox">Norwegian</div></a><a href="/text-to-speech/Polish/"><div class="langbox">Polish</div></a><a href="/text-to-speech/Portuguese/"><div class="langbox">Portuguese</div></a><a href="/text-to-speech/Romanian/"><div class="langbox">Romanian</div></a><a href="/text-to-speech/Russian/"><div class="langbox">Russian</div></a><a href="/text-to-speech/Swedish/"><div class="langbox">Swedish</div></a><a href="/text-to-speech/Turkish/"><div class="langbox">Turkish</div></a><a href="/text-to-speech/US English/"><div class="langbox">US English</div></a><a href="/text-to-speech/US Spanish/"><div class="langbox">US Spanish</div></a><a href="/text-to-speech/Welsh/"><div class="langbox">Welsh</div></a><a href="/text-to-speech/Welsh English/"><div class="langbox">Welsh English</div></a>		</div>
+	
+		<div style="text-align: justify; width: 70%; padding: 30px; border: 2px solid #cecece; padding-top: 10px; margin-top: 15px;">
+			<h3>Are you looking for free speech-to-text conversion?</h3>
+			<p>If you are looking for ways to convert your spoken audio files from US English to written text, check out our partner-website <a target="_blank" href="https://convertspeech.com">ConvertSpeech.com</a></p>
+			<div style="background: black; width: 240px; padding:0px; margin: 0px; margin-top:5px; margin-left: 15px;"><a target="_blank" href="https://convertspeech.com"><img style="margin: 0px; padding: 10px;" src="https://convertspeech.com/img/logow.png" width="200"></a></div>
+		</div>
+	
+		<br>
+		<p>Current Limit: ~375 words or 3,000 characters / day | Powered by AWS Polly</p>
+		<p>Get in touch? Mail me: <br><img src="/images/mail.png" width="200"></p>
+		<p>Need to convert more text to speech? <a href="/register?click=direct">Register here</a> for a 24 hour premium access.</p>
+	</div>
+
+		<div id="footer">
+		<div>
+			<p>© 2023 ttsMP3.com | <a class="botlink" rel="nofollow" href="/faq">FAQ</a> | <a class="botlink" rel="nofollow" href="/privacypolicy">Privacy Policy</a> | <a class="botlink" rel="nofollow" href="/tos">Terms of Service</a> | <a class="botlink" rel="nofollow" href="/apidoc">API Documentation</a> </p>
+
+		</div>
+	</div>	
+
+
+	
+
+	<script src="/js/jquery-3.3.1.min.js"></script>
+	<script type="text/javascript" src="/js/FileSaver.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="/css/style.css?v5">
+	<link rel="stylesheet" type="text/css" href="/css/mobile.css?v5" media="screen and (max-width : 568px)">
+
+<ins class="adsbygoogle adsbygoogle-noablate" style="display: none !important;" data-adsbygoogle-status="done" data-ad-status="unfilled"><div id="aswift_2_host" style="border: medium none; height: 0px; width: 0px; margin: 0px; padding: 0px; position: relative; visibility: visible; background-color: transparent; display: inline-block;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_2" name="aswift_2" style="left:0;position:absolute;top:0;border:0;width:undefinedpx;height:undefinedpx;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/ads?client=ca-pub-2908655618540976&amp;output=html&amp;adk=1812271804&amp;adf=3025194257&amp;lmt=1685645868&amp;plat=1%3A1024%2C2%3A1024%2C3%3A2097152%2C4%3A2097152%2C9%3A32776%2C16%3A8388608%2C17%3A32%2C24%3A32%2C25%3A32%2C30%3A1081344%2C32%3A32%2C41%3A32%2C42%3A32&amp;format=0x0&amp;url=https%3A%2F%2Fttsmp3.com%2F&amp;ea=0&amp;pra=7&amp;wgl=1&amp;dt=1685645868159&amp;bpp=2&amp;bdt=995&amp;idt=300&amp;shv=r20230530&amp;mjsv=m202305250101&amp;ptt=9&amp;saldr=aa&amp;abxe=1&amp;cookie=ID%3D3de0ff2b41b37ef8-22201eeb88de00ac%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_MaLpmsz8yp0p0C5min02JUXGKwEAA&amp;gpic=UID%3D00000986baeb1d06%3AT%3D1683406866%3ART%3D1685645866%3AS%3DALNI_Ma3HV8SDAIzSLY9gPZT6VhWvZQyyA&amp;prev_fmts=1903x400%2C1903x280&amp;nras=1&amp;correlator=6443000861599&amp;frm=20&amp;pv=1&amp;ga_vid=1038892520.1683406865&amp;ga_sid=1685645869&amp;ga_hid=247810630&amp;ga_fc=1&amp;u_tz=-300&amp;u_his=3&amp;u_h=1080&amp;u_w=1920&amp;u_ah=1040&amp;u_aw=1920&amp;u_cd=24&amp;u_sd=1&amp;adx=-12245933&amp;ady=-12245933&amp;biw=1903&amp;bih=602&amp;scr_x=0&amp;scr_y=0&amp;eid=44759927%2C44759837%2C44759876%2C31074583%2C31074966%2C31074990%2C44788442%2C44793497&amp;oid=2&amp;pvsid=3193197553643833&amp;tmod=1085059103&amp;nvt=1&amp;fsapi=1&amp;fc=896&amp;brdim=-8%2C-8%2C-8%2C-8%2C1920%2C0%2C1936%2C1056%2C1920%2C602&amp;vis=1&amp;rsz=%7C%7Cs%7C&amp;abl=NS&amp;fu=32768&amp;bc=31&amp;ifi=3&amp;uci=a!3&amp;fsb=1&amp;dtd=602" data-google-container-id="a!3" data-load-complete="true" frameborder="0"></iframe></div></ins><iframe src="https://www.google.com/recaptcha/api2/aframe" style="display: none;" width="0" height="0"></iframe></body><iframe id="google_esf" name="google_esf" src="https://googleads.g.doubleclick.net/pagead/html/r20230530/r20190131/zrt_lookup.html" style="display: none;"></iframe><ins class="adsbygoogle adsbygoogle-noablate" style="display: none !important; width: 100vw !important; height: 100vh !important; inset: 0px auto auto 0px !important; clear: none !important; float: none !important; margin: 0px !important; max-height: none !important; max-width: none !important; opacity: 1 !important; overflow: visible !important; padding: 0px !important; position: fixed !important; vertical-align: baseline !important; visibility: visible !important; z-index: 2147483647 !important; background: transparent !important;" data-adsbygoogle-status="done" aria-hidden="true" data-ad-status="filled" data-vignette-loaded="true"><div id="aswift_6_host" style="border: medium none !important; height: 100vh !important; width: 100vw !important; margin: 0px !important; padding: 0px !important; position: relative !important; visibility: visible !important; background-color: transparent !important; display: inline-block !important; inset: auto !important; clear: none !important; float: none !important; max-height: none !important; max-width: none !important; opacity: 1 !important; overflow: visible !important; vertical-align: baseline !important; z-index: auto !important;" tabindex="0" title="Advertisement" aria-label="Advertisement"><iframe id="aswift_6" name="aswift_6" style="width: 100vw !important; height: 100vh !important; inset: 0px auto auto 0px !important; position: absolute !important; clear: none !important; display: inline !important; float: none !important; margin: 0px !important; max-height: none !important; max-width: none !important; opacity: 1 !important; overflow: visible !important; padding: 0px !important; vertical-align: baseline !important; visibility: visible !important; z-index: auto !important;" sandbox="allow-forms allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-top-navigation-by-user-activation" marginwidth="0" marginheight="0" vspace="0" hspace="0" allowtransparency="true" scrolling="no" src="https://googleads.g.doubleclick.net/pagead/html/r20230530/r20110914/zrt_lookup.html?fsb=1#RS-0-&amp;adk=1812271808&amp;client=ca-pub-2908655618540976&amp;fa=8&amp;ifi=7&amp;uci=a!7&amp;xpc=BIscog47jn&amp;p=https%3A//ttsmp3.com" data-google-container-id="a!7" data-google-query-id="CNzW7Zjgov8CFTqJpgQdJ6QB2g" data-load-complete="true" width="" height="" frameborder="0"></iframe></div></ins></html>
